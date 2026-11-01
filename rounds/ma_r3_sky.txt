@@ -1,0 +1,27 @@
+I'll dig into the repo and run the demo before scoring.Now let me run the live demo with a browser.The buy button works live — real payment, review rendered, tx links. Let me check the verifier and repo quickly.I ran the demo myself: the buy button did a real x402 round trip (payment + audit note + StudyBuddy receipt, live tx links), the review rendered fully, and the on-chain audit log with refund rows shows. Video exists (6.5 MB mp4), repo is complete, agent card is well-formed with the x402 accepts block. It's a genuinely working build. Now the blunt part.
+
+**Scores as it stands (strict)**
+
+| Criterion | Score | Why |
+|---|---|---|
+| 1. Technical use of Algorand | 8/10 | Real ASA payments, ARC-69 Agent ID with pinned card hash, ARC-2 audit notes, fee pooling, indexer-driven policy. Deduction: there is **not a single smart contract in the project**. Everything is ASA transfers plus notes; refund is voluntary and admitted to be so. |
+| 2. x402 / agentic payments | 8/10 | Genuine exact-scheme AVM flow, card advertises price without probing, gasless via fee payer, buyer enforces a budget from chain data. Deductions: the facilitator is run by the same team as the seller, and both "buyer" and "seller" are the same team — no third party has ever bought. |
+| 3. Innovation | 6/10 | The two-party attest (seller audit note + buyer receipt) is the one fresh idea. The rest — per-call payment, 402, an LLM endpoint — is the standard x402 demo shape. Nothing here couldn't be rebuilt from the x402 quickstart in a weekend. |
+| 4. Real-world impact in India | 5/10 | The problem (UPSC aspirants get no answer feedback) is real and well-chosen. But there's no INR/UPI story beyond a "path to production" paragraph, no evidence anyone in India wants or would pay for this, and no quality evidence (zero human-graded answers). |
+| 5. Completeness | 7/10 | Everything I clicked works. Deductions: CI is not actually enabled (`ci/verify.yml` sits in `ci/`, not `.github/workflows/` — a "green checkmark" that doesn't exist), rate limits live in function memory, single buyer. |
+
+**Top 6 improvements, ordered by score impact**
+
+1. **Criterion 4 — get one buyer who isn't you.** Post the `scripts/buy.mjs` one-liner and a 20-USDC wallet credit to the hackathon community (DoraHacks Discord, X), have one real outside account run one purchase, and show that tx on the page's audit log with "third-party buyer" labeled. Right now every transaction on the chain was made by your two wallets; a judge who checks the indexer sees a one-actor theater. One genuine outside buyer moves India impact from 5 to 7 and x402 from 8 to 9.
+
+2. **Criterion 1 — replace the voluntary refund with a small AVM smart contract escrow.** This is your biggest technical gap and it's ~100 lines of PyTeal/Algorand TypeScript: buyer's payment goes to an app holding the funds; seller app-calls with the review hash to release, or the buyer reclaims after a timeout. It directly kills the "refund is voluntary, facilitator is us" trust caveat that two critic rounds only papered over with a prose Trust Model section. Technical score goes 8→10; you'd be the only entry in this hackathon with an actual on-chain contract enforcing x402 settlement.
+
+3. **Criterion 4 — grade it against humans, even once.** Take 10 real previous-years UPSC Mains answers with official examiner marks, run your reviewer, publish the correlation table on the page (honest, small, even if it's 10 samples). Without it, "score, strengths, gaps" is unverified LLM output — judges can't tell if the thing being paid for is any good. This was flagged by a critic and skipped twice; it's the difference between a payments demo and a product.
+
+4. **Criterion 5 — enable the CI you already wrote.** A human on the team commits `ci/verify.yml` to `.github/workflows/` (30 seconds in the GitHub web UI; no token needed) and a green check appears proving the on-chain verification test passes continuously. Right now the test exists but nothing runs it. Also swap the in-memory abuse limits for something stateful (Upstash Redis free tier is enough) so the claim "limits exist" survives a serverless cold start.
+
+5. **Criterion 4 — make the rupee real.** Show the price in ₹ with a live USDC→INR conversion on the page, and name an actual off-ramp (e.g. a MoonPay/Ramp/direct bank payout via a partner) in "Path to production" — currently the India story stops at "study apps would bill students in rupees." Even better: wire StudyBuddy's page to show the student-facing price of one review in ₹4-ish terms, so a judge sees the user-facing unit, not only the micro-payment unit.
+
+6. **Criterion 3 — make the buyer receipt bite.** You already write StudyBuddy's dispute note, but it has no consequence, so it's ceremony. Make it real: if a seller's audit note is missing or hash-mismatched, StudyBuddy permanently blocks that seller (persisted, shown on its page: "trust ledger"), and the seller page reflects a reputation score computed from the indexer across all buyers. That converts your best idea (two-party attestation) into the actual innovation pitch — a reputation primitive for agent commerce — and gives the demo a story a judge remembers.
+
+One more note since it's a hackathon: the video is 2:39 and I could watch it load fine, but the page itself doesn't embed it prominently — put the mp4 in a `<video>` tag above the fold so a judge who never opens GitHub still sees the 2-minute version.

@@ -1,0 +1,9 @@
+{
+ "url": "https://wajo.ai/fo/c/b3a704c1-b803-4ae6-94c8-5637832d026c",
+ "txt": "Full v3 review, judged hands-on: https://wajo.ai/d/44ad1625-c802-4f16-a58c-adef9520e197\n\nScores: Technical 9, x402 8, Innovation 7.5, India impact 6.5, Completeness 8. I ran it: buy clean in 5.6s, tamper refused by the chain, video really 2:39.\n\nFixes by impact: 1) ship the escrow your own trust model calls the next step; 2) make the dispute note trigger an auto-refund (nothing reads it today); 3) add a Buyer column to the audit table and buy once from a second account; 4) reconcile stats with the table (15 rows vs \"6 paid · 2 refunded\"); 5) move ci/verify.yml into .github/workflows and get the badge; 6) sync ROUNDS with the README and page (2:26 vs 2:39, \"~3 s\" still live). Anyone with the link can open it; say the word if you want it private.",
+ "links": [
+  "https://wajo.ai/d/44ad1625-c802-4f16-a58c-adef9520e197",
+  "https://wajo.ai/d/44ad1625-c802-4f16-a58c-adef9520e197"
+ ],
+ "stop": false
+}
