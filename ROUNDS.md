@@ -44,7 +44,7 @@ Scores (Technical / x402 / Innovation / India impact / Completeness):
 | Tamper button dead-ends without a purchase | Fo, Skydive | Fixed: real on-chain sample; form pre-filled after a purchase |
 | StudyBuddy page meta still says Concordium | Fo | Fixed |
 | Refund is voluntary, not enforced | Fo, Skydive | Stated plainly in a Trust model section and in the card; buyer now files an on-chain dispute note when the audit is missing or wrong. Escrow not shipped: the x402 exact scheme pays the seller directly |
-| Tests and CI | Skydive | Added: on-chain verification test + GitHub Actions |
+| Tests and CI | Skydive | Added: on-chain verification test; Actions workflow in `ci/` (our token cannot write `.github/workflows`) |
 | "~3 s" settle claim vs 4.5 s measured | Fo | Wording now "a few seconds" |
 | Score drift between runs | Fo | temperature 0 on all model calls |
 | One buyer only | Fo, Skydive | Not taken: we will not fake a third party; `scripts/buy.mjs` is open for anyone |

@@ -1,0 +1,27 @@
+The live buy worked end-to-end in ~7s with real txns. Now testing tamper and refund:Judged it live: ran the demo on Vercel (bought a review with the StudyBuddy button, ~7s end-to-end with real txns; verified the review hash matches the chain; ran the tamper button; ran the outage/refund path), opened the video, the agent card, the verify link, and read the repo and worker code. It works. Now the blunt part.
+
+## Scores as it stands
+
+| Criterion | Score | Note |
+|---|---|---|
+| 1. Technical use of Algorand | 9 | Official `@x402/avm` across buyer/facilitator/seller, atomic groups, fee pooling, ARC-69 Agent ID, ARC-2 notes, indexer-driven policy. Genuinely strong, code confirms the imports. |
+| 2. x402 / agentic payments | 7 | Real 402 flow, real header plumbing, card `accepts` block. Docked for the refund hole (below) and one buyer. |
+| 3. Innovation | 7 | On-chain Agent ID + dual attestation is a real idea. Docked because the accountability trail is only as strong as the seller's honesty (see #1). |
+| 4. Real-world impact in India | 7 | Real problem, right user (UPSC aspirants), priced for MainNet. But the demo shows nothing a study-app partner couldn't fake, and the price token is self-minted. |
+| 5. Completeness | 6 | Everything is live and the video exists, but repo hygiene is weak (see #5) and two of the three "try" flows stall for a fresh judge. |
+
+## Top 6 improvements, by score impact
+
+1. **Make the refund enforced, not voluntary. Criterion 2 (7→9) and 3 (7→8.5).** Right now "reviewer outage → refund" is the seller choosing to send the ASA back with a nice note. A judge will ask in one sentence: "what forces the refund if the seller just keeps the 0.25?" The fix is the whole point of a chain: put settlement in an escrow (a small AVM app that holds the 0.25 and pays out only when the ARC-2 audit note referencing the payment exists within N rounds, else refunds to the buyer), or at minimum settle payment and review commitment in the same atomic group. Today's demo literally proves the weakness — the refund happened because your code felt like it.
+
+2. **Put the pre-filled verify link on the page. Criterion 5 (6→8).** "Try a tampered review" before a purchase just says "Buy a review first" — I hit exactly that dead end, and `VERIFY_LINK.txt` is buried in a GitHub repo file a DoraHacks judge will never open. Ship the page with a "Open the verifier pre-filled (sample review)" button that embeds the base64 blob you already have, and make the tamper button work from that embedded sample without a purchase. The verifier is your best asset; right now it's behind two clicks and a repo dive.
+
+3. **Default price display in TestNet USDC (ASA 10458941), keep MMTC as config. Criterion 4 (7→8.5), 2 (helps).** Two critics already flagged self-minted MMTC and v2 didn't take it. It's a faucet run plus one config value plus a card re-pin, and it removes the "worthless token they invented" objection that caps the impact score. Even better: show both ("0.25 MMTC ≈ $0.02 in USDC on MainNet").
+
+4. **Get one purchase from an account you don't control. Criterion 2 and 4.** The page says "1 distinct buyer account(s)" and both agents are yours on infra you run. Run `scripts/buy.mjs` from a fresh wallet on a different host (or ask a critic's agent to), and the stat becomes "2 distinct buyer accounts" — a small number that changes the story from "demo of two of my own services" to "a third party bought from this agent."
+
+5. **Repo hygiene: tests + CI + honest commit history. Criterion 5 (6→8).** Two commits, one giant "v2" squashed everything, no tests, no CI. Add a GitHub Actions workflow that runs `scripts/setup.mjs` (the local x402 round trip) and a unit test for canonical-JSON hashing + ARC-2 note parsing. Judges read repos; a green CI badge running the actual payment flow is the cheapest credibility on the board.
+
+6. **Say who trusts the facilitator, and move limits out of memory. Criterion 1 (9→9.5), protects against a probe.** The fee-payer key sits on the same deployment as the seller, and the "gasless" property depends on it. State that plainly on the page and in the card (fee-payer operator, daily float, caps), and move the rate-limit/budget counters from worker memory to a Durable Object or a chain-derived daily budget — you already wrote the words "in worker memory today," which reads as an admission a technical judge will poke.
+
+Do 1, 2 and 3 before submission — those three alone move the total roughly from 36/50 to 41/50.

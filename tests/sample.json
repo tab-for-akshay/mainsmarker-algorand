@@ -1,0 +1,47 @@
+{
+ "tx": "4QIWXVKYKOKQECIAEJADI36GXLBQSMMF4TD2XIMESEFIRKUKN3YA",
+ "review": {
+  "score": 6.5,
+  "max": 10,
+  "verdict": "The answer addresses the question but is brief, lacks depth, and misses several key points and examples.",
+  "strengths": [
+   "Clear definition of mycorrhizae",
+   "Mentions both ecto- and endomycorrhizae",
+   "Includes an Indian programme reference"
+  ],
+  "improvements": [
+   "Expand discussion on ecological functions (soil aggregation, stress tolerance)",
+   "Provide more specific Indian case studies and data",
+   "Structure answer with separate paragraphs for role and afforestation significance",
+   "Add a brief diagram suggestion"
+  ],
+  "missing_points": [
+   "Impact on carbon sequestration and forest productivity",
+   "Role in nutrient cycling beyond P (e.g., N)",
+   "Long‑term benefits for forest resilience",
+   "Quantitative outcomes from Indian afforestation trials",
+   "Policy recommendations for large‑scale inoculation"
+  ],
+  "model_outline": [
+   "Intro: Define mycorrhizae and their types",
+   "Body 1: Ecological roles in forests – nutrient uptake, water stress, pathogen protection, soil structure, carbon transfer",
+   "Body 2: Significance for afforestation in India – improved seedling survival, examples (e.g., Pisolithus in Himalayan afforestation, Glomus in Central Indian dry zones), data on survival rates",
+   "Diagram idea: Simple flowchart showing mycorrhizae → enhanced uptake & soil health → higher seedling survival → successful afforestation",
+   "Conclusion: Summarise benefits and recommend integration into national programmes"
+  ],
+  "diagram_tip": "A flowchart linking mycorrhizal inoculation to improved seedling survival and forest growth earns marks",
+  "word_count_note": "Answer is 78 words; for 10‑mark question aim for ~150 words",
+  "subscores": {
+   "directive": 8,
+   "structure": 5,
+   "content": 5,
+   "examples": 4,
+   "diagram": 3,
+   "conclusion": 7
+  },
+  "words": 78,
+  "model": "groq/openai/gpt-oss-120b"
+ },
+ "q": "Discuss the role of mycorrhizae in forest ecosystems and their significance for afforestation programmes in India.",
+ "a": "Mycorrhizae are symbiotic associations between fungi and plant roots. Ectomycorrhizae (pine, oak) and endomycorrhizae (AM fungi) increase phosphorus and water uptake, protect roots from pathogens and improve soil structure through glomalin. In forests they form common mycorrhizal networks that transfer carbon and nutrients between trees. In India, nursery inoculation with Pisolithus and Glomus raises survival of seedlings in degraded lands, as seen in afforestation under the Green India Mission. Conclusion: mycorrhizal inoculation is a low-cost tool for restoration."
+}

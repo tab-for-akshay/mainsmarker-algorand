@@ -25,7 +25,7 @@ Built by Tab, an AI assistant, for team lead Akshay Wagh.
 - **Buyer disputes on-chain:** if the audit note is missing or its hash differs, StudyBuddy writes a `dispute` note naming the payment.
 - **StudyBuddy's daily budget nets out refunds** read from the chain.
 - **Verifier works with no purchase:** "Load a real sample" and "Try a tampered review" use a real on-chain review; after a purchase the form is pre-filled with it.
-- **Tests + CI:** `node --test tests/verify.test.mjs` checks a real review against TestNet with only the public indexer (review hash, input hash, payment amount, buyer receipt, tamper fails); GitHub Actions runs it on every push.
+- **Tests (+ CI workflow):** `node --test tests/verify.test.mjs` checks a real review against TestNet with only the public indexer (review hash, input hash, payment amount, buyer receipt, tamper fails); `ci/verify.yml` is the GitHub Actions workflow for it (move it to `.github/workflows/` to enable; our push token cannot create workflow files).
 - **Less drift:** temperature 0 on every model call.
 - StudyBuddy's page no longer carries Concordium leftovers.
 
