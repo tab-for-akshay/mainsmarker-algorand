@@ -10,15 +10,35 @@ Built by Tab, an AI assistant, for team lead Akshay Wagh.
 
 | | Link |
 |---|---|
-| Live demo (seller page; the button calls StudyBuddy) | https://mainsmarker-algo.sites.tab.bot/ |
+| Live demo (seller page; the button calls StudyBuddy) | https://mainsmarker-algo.vercel.app/ |
+| Mirror (same code and card bytes) | https://mainsmarker-algo.sites.tab.bot/ |
 | StudyBuddy (buyer agent, different cloud) | https://studybuddy-algo.vercel.app/ |
-| Agent Card | https://mainsmarker-algo.sites.tab.bot/.well-known/agent-card.json |
+| Agent Card | https://mainsmarker-algo.vercel.app/.well-known/agent-card.json |
 | Agent ID asset | https://lora.algokit.io/testnet/asset/775327772 |
-| Demo video (≤ 3 min) | https://mainsmarker-algo.sites.tab.bot/demo.mp4 |
+| Shareable verify link (opens the verifier pre-filled and checks the chain) | see `VERIFY_LINK.txt` |
+| Demo video (2:26) | https://mainsmarker-algo.vercel.app/demo.mp4 |
+
+## New in v2 (after round-1 critics)
+- **Demo video** is live (https://mainsmarker-algo.vercel.app/demo.mp4, 2:26): buy, explorer, verify, tamper, refund.
+- **Chain-only verifier.** "Verify any review" reads the AlgoNode indexer straight from your browser; MainsMarker's own API is not asked. It checks three things: the review hash, the **input hash** (paste the question and answer: proves the review was produced for that answer), and the **buyer's receipt**.
+- **Buyer receipt.** After every purchase StudyBuddy writes its own ARC-2 note from its own account (`studybuddy:j{t:"sb/1", audit, out}`): two independent parties attest the same review hash.
+- **"Try a tampered review"** changes the score by 3 and shows the chain refusing it.
+- **Refund path, on-chain.** If the review fails after settlement, MainsMarker transfers the 0.25 MMTC back with a refund note naming the payment. "Simulate a reviewer outage" shows it live.
+- **Agent card carries the x402 `accepts` block** (scheme, network, asset, amount, payTo, feePayer) and `authentication.schemes: ["x402"]`, so a buyer learns the price without probing; the new card hash is re-pinned on the Agent ID (ARC-69 update tx below).
+- **Per-criterion marks** (directive, structure, content, examples, diagram, conclusion); rubric `mm-rubric-2026-11-01b` also tells the model to cite only examples relevant to the question (round 1 caught an irrelevant one).
+- **Live streamed steps** (NDJSON) with real timings; stats count only exact-price transfers and subtract refunds.
+- **Hosting:** seller on Vercel (public, free), StudyBuddy on a separate Vercel project and account key; sites.tab.bot is a mirror.
+- Footer source link fixed (it pointed at the Concordium repo).
+
+## Verify a review yourself
+1. Open the shareable link in `VERIFY_LINK.txt` (or paste an audit tx id and a review JSON into "Verify any review").
+2. Your browser hashes the canonical JSON (keys sorted recursively, no whitespace) with SHA-256 and compares it with `out` in the ARC-2 note of the audit tx, read from `https://testnet-idx.algonode.cloud`.
+3. With the question and answer filled in, it also checks `in` = SHA-256 of canonical `{question, answer}`.
+4. It then looks for StudyBuddy's receipt note naming that audit tx and checks it carries the same hash.
 
 ## Architecture
 ```
-Browser ─POST /api/buy─▶ StudyBuddy (Vercel, Node)                MainsMarker (Cloudflare Worker)
+Browser ─POST /api/buy─▶ StudyBuddy (Vercel, Node)                MainsMarker (Vercel, Node)    
                          1 GET agent-card.json ─────────────────▶ card
                          2 indexer: Agent ID asset #775327772 (creator = payTo, ARC-69 card_sha256 = card)
                          3 POST /x402/review ───────────────────▶ 402 + PAYMENT-REQUIRED (exact, ASA 775327739, feePayer)
@@ -49,6 +69,12 @@ Abuse limits on the gasless path: 6 paid reviews per payer per 10 minutes, at mo
 | Agent Card hash pinned (ARC-69 update) | https://lora.algokit.io/testnet/transaction/KTIZOTPJPWTAV3QLYYIRJSJ7NKI3PNMIMCMDVZJTDZEKWAZM5ZWA |
 | StudyBuddy → MainsMarker x402 payment (gasless) | https://lora.algokit.io/testnet/transaction/JE2T6FRODQWZ6JJDTY74FACHHJJK73K3WTTO67TQM3ELLHMQPJUA |
 | …its ARC-2 audit note | https://lora.algokit.io/testnet/transaction/PWLDY77ORO6V7HO5BERUDRV4FHK6VEPMPPVRK6X6JGRTPLQYAI7Q |
+| v2: Agent Card v2 hash re-pinned (ARC-69 update) | https://lora.algokit.io/testnet/transaction/UJTJNH54UMD2JXPEM7XO44KFVTA5MSMI73AQH55CM3YCJFZTNW3Q |
+| v2: x402 payment (gasless) | https://lora.algokit.io/testnet/transaction/BCMMISY5BU5Z7EFL67CVTUUVHT53X32BP66C3FJD7EENPBVU72RQ |
+| v2: …its ARC-2 audit note | https://lora.algokit.io/testnet/transaction/IONJUAXPMAVBH5ZMD4ZQ7IJQRU5YWSM2W7WVIKKNVGWR73RBD5HQ |
+| v2: …StudyBuddy's own receipt note | https://lora.algokit.io/testnet/transaction/4QYZBEN34AMLLVRMEPIVWT3FIRCDTEXKAD3S63UIMYEBBTUOZ7IQ |
+| v2 refund demo: payment | https://lora.algokit.io/testnet/transaction/ZR2Z6Y4DWDX6DA7SHYGMPE5WOUNEIXNJHWSXVCMBRCZVKA54RKEA |
+| v2 refund demo: refund (0.25 MMTC back, note names the payment) | https://lora.algokit.io/testnet/transaction/EHXUM5TGDJ36DL7N5NZIHOQHHU6EVM3VT76MZXBUPYDU47VFI23A |
 
 Accounts: MainsMarker `HOT2D2KIXUHNU6WJISIJP5VAJM3VIY4LW2ILBJGTRES3UAPHRLHSXD6HIY`, StudyBuddy `2CFROGGGE7OINW4UYE7CPOMUXZUDCP2SRW3MKI367M5RK7QPZIPUTLXK4M`, facilitator / fee payer `LYWBPK4OVJABP7CJGGURIYCVJULVGSQF4X4PMWWI5Q2TSSJETFGHDUPXIQ`.
 

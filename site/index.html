@@ -73,7 +73,7 @@ Conclusion: mycorrhizae are an invisible partner of forests, and their wider use
         <div><label for="marks">Marks</label><select id="marks"><option>10</option><option selected>15</option><option>20</option></select></div>
         <div><label for="mode">Reviewer model</label><select id="mode"><option value="cloud">Cloud (fast)</option><option value="private">Private self-hosted (open-weights, slower)</option></select></div>
       </div>
-      <button id="go">Let StudyBuddy buy a review · 0.25 MMTC</button>
+      <button id="go">Let StudyBuddy buy a review · 0.25 MMTC</button> <button class="ghost" id="gosim" title="Pays, then makes the reviewer fail on purpose, so you can see the on-chain refund">Simulate a reviewer outage (refund path)</button>
       <p class="note">The button calls <a href="https://studybuddy-algo.vercel.app/" target="_blank" rel="noopener">StudyBuddy</a>, a separate buyer agent (own service on another cloud, own key). It fetches this agent's card over HTTP, checks the Agent ID on-chain, applies its spending policy, then pays over x402. TestNet only; MMTC is a test credit with no value.</p>
     </div>
     <div class="card">
@@ -87,6 +87,7 @@ Conclusion: mycorrhizae are an invisible partner of forests, and their wider use
         <li data-k="Settled"><span class="dot">6</span><div>Facilitator verifies and settles<small>verify, simulate, submit, confirmed in ~3 s</small></div></li>
         <li data-k="Reviewed"><span class="dot">7</span><div>MainsMarker marks the answer<small>model recorded</small></div></li>
         <li data-k="Logged on-chain"><span class="dot">8</span><div>Audit record written on-chain<small>ARC-2 note: input + review hashes, rubric, model, payment</small></div></li>
+        <li data-k="Buyer receipt"><span class="dot">9</span><div>Buyer writes its own receipt<small>second, independent on-chain attestation from StudyBuddy's account</small></div></li>
       </ol>
       <p class="note" id="elapsed"></p>
     </div>
@@ -100,10 +101,11 @@ Conclusion: mycorrhizae are an invisible partner of forests, and their wider use
       <div><h3>Strengths</h3><ul id="strengths"></ul><h3>Improve</h3><ul id="improvements"></ul></div>
       <div><h3>Missing points</h3><ul id="missing"></ul><h3>Model outline</h3><ul id="outline"></ul></div>
     </div>
+    <h3>Per-criterion marks (out of 10)</h3><p id="subs" class="mono"></p>
     <h3>Diagram tip</h3><p id="diagram"></p>
     <h3>Proof</h3>
     <div class="mono" id="proof"></div>
-    <button class="ghost" id="verify">Verify this review against the chain</button>
+    <button class="ghost" id="verify">Verify this review against the chain</button> <a id="vlink" hidden target="_blank" rel="noopener" class="note">Shareable verify link (opens the verifier pre-filled) ↗</a>
     <p id="vres" class="note"></p>
   </section>
 
@@ -125,16 +127,18 @@ Conclusion: mycorrhizae are an invisible partner of forests, and their wider use
 
   <section class="card">
     <h2>Verify any review</h2>
-    <p class="note">Paste a review JSON (the <span class="mono">review</span> object an agent received) and its audit transaction hash. Your browser hashes the canonical JSON (keys sorted, no spaces) and compares it with the hash anchored on Algorand.</p>
-    <label for="vtx">Audit transaction hash</label><input id="vtx" class="mono" style="width:100%" placeholder="64 hex characters">
+    <p class="note">Paste a review JSON (the <span class="mono">review</span> object an agent received) and its audit transaction id. Your browser hashes the canonical JSON (keys sorted, no spaces) and compares it with the hash anchored on Algorand. <b>Every check reads the chain directly from your browser</b> (the public AlgoNode TestNet indexer); MainsMarker's own API is not asked, so the seller cannot vouch for itself.</p>
+    <label for="vtx">Audit transaction id</label><input id="vtx" class="mono" style="width:100%" placeholder="52 characters">
+    <label for="vq">Question (optional, to check the input hash too)</label><textarea id="vq" style="min-height:50px"></textarea><label for="va">Answer (optional)</label><textarea id="va" style="min-height:70px"></textarea>
     <label for="vjson">Review JSON</label><textarea id="vjson" class="mono" style="min-height:90px" placeholder='{"score": 7.5, "max": 15, ...}'></textarea>
-    <button class="ghost" id="vany">Check against the chain</button> <span id="vanyres" class="note"></span>
+    <button class="ghost" id="vany">Check against the chain</button> <button class="ghost" id="vtamper" title="Changes the score in the pasted review by +3, then checks it">Try a tampered review</button> <span id="vanyres" class="note"></span>
+    <p class="note" id="vtamperres"></p>
   </section>
 
   <section class="card">
     <h2>For agent builders</h2>
     <p class="note">Any x402 client with an AVM signer can buy a review directly (the 60-line <span class="mono">scripts/buy.mjs</span> in the repo does it).</p>
-<pre>curl -i -X POST https://mainsmarker-algo.sites.tab.bot/x402/review -H 'content-type: application/json' \
+<pre>curl -i -X POST https://mainsmarker-algo.vercel.app/x402/review -H 'content-type: application/json' \
   -d '{"question":"…","answer":"…","marks":10}'
 # → 402 + PAYMENT-REQUIRED (scheme exact, network algorand:SGO1GKSz…, asset 775327739, 250000, feePayer)
 # retry with PAYMENT-SIGNATURE: base64(x402 payload with the signed group) — see scripts/buy.mjs</pre>
@@ -142,7 +146,7 @@ Conclusion: mycorrhizae are an invisible partner of forests, and their wider use
   </section>
 </main>
 <footer>
-  Built by Tab, an AI assistant, for team lead Akshay Wagh. · AlgoBharat (Algorand) · <a href="https://github.com/tab-for-akshay/mainsmarker">Source on GitHub (MIT)</a><br>
+  Built by Tab, an AI assistant, for team lead Akshay Wagh. · AlgoBharat (Algorand) · <a href="https://github.com/tab-for-akshay/mainsmarker-algorand">Source on GitHub (MIT)</a><br>
   Testnet demo. Reviews are AI feedback for practice, not official UPSC evaluation.
 </footer>
 <script>
@@ -164,7 +168,7 @@ async function info(){
 }
 async function audit(){
   try{const a=await (await fetch('/api/audit?limit=15')).json();
-    $('audit').innerHTML=a.length?a.map(r=>`<tr><td>${r.at.replace('T',' ').slice(0,16)}</td><td>${esc(r.sc)}</td><td>${esc(r.m)}</td><td class="mono">${short(r.out)}</td><td><a href="${r.explorer}" target="_blank" rel="noopener">view tx</a></td></tr>`).join(''):'<tr><td colspan="5">No reviews yet. Run one above.</td></tr>';
+    $('audit').innerHTML=a.length?a.map(r=>r.t==='refund'?`<tr><td>${r.at.replace('T',' ').slice(0,16)}</td><td><b>refund</b></td><td>${esc(r.why||'')}</td><td class="mono">pay ${short(r.pay||'')}</td><td><a href="${r.explorer}" target="_blank" rel="noopener">view tx</a></td></tr>`:`<tr><td>${r.at.replace('T',' ').slice(0,16)}</td><td>${esc(r.sc)}</td><td>${esc(r.m)}</td><td class="mono">${short(r.out)}</td><td><a href="${r.explorer}" target="_blank" rel="noopener">view tx</a></td></tr>`).join(''):'<tr><td colspan="5">No reviews yet. Run one above.</td></tr>';
   }catch(e){$('audit').innerHTML='<tr><td colspan="5">Could not read the chain right now.</td></tr>'}
 }
 async function pending(a){
@@ -176,44 +180,69 @@ async function pending(a){
 }
 function mark(k,cls,html){const li=[...document.querySelectorAll('#steps li')].find(l=>l.dataset.k===k);if(!li)return;li.className=cls;if(html)li.querySelector('small').innerHTML=html;}
 let tick;
-$('go').onclick=async()=>{
-  const btn=$('go');btn.disabled=true;btn.textContent='Working… (about 20–40 s)';$('result').hidden=true;
-  document.querySelectorAll('#steps li').forEach(l=>l.className='');
-  const order=[...document.querySelectorAll('#steps li')].map(l=>l.dataset.k);let i=0;const t0=Date.now();
-  document.querySelectorAll('#steps li').forEach(l=>l.className='wait');tick=setInterval(()=>{$('elapsed').textContent='StudyBuddy is working… '+((Date.now()-t0)/1000).toFixed(0)+' s (steps appear with their real timings when it reports back)'},400);
+const IDX='https://testnet-idx.algonode.cloud';const MMACC=null;
+const NP='mainsmarker:j',SP='studybuddy:j';
+const rdNote=(n,p)=>{try{const s=new TextDecoder().decode(Uint8Array.from(atob(n),c=>c.charCodeAt(0)));return s.startsWith(p)?JSON.parse(s.slice(p.length)):null}catch(e){return null}};
+async function chainAudit(tx){const r=await fetch(`${IDX}/v2/transactions/${tx}`);if(r.status!==200)return{found:false,status:'not indexed yet, or not a transaction id'};const t=(await r.json()).transaction;const rec=rdNote(t.note||'',NP);return rec&&rec.out?{found:true,record:rec,sender:t.sender,explorer:EX+'/transaction/'+tx}:{found:false,status:'no MainsMarker audit note in that transaction'}}
+async function chainReceipt(tx,rec){const payer=rec.payer;if(!payer)return{found:false};const j=await (await fetch(`${IDX}/v2/accounts/${payer}/transactions?note-prefix=${encodeURIComponent(btoa(SP))}&limit=100`)).json();
+  for(const t of j.transactions||[]){const r=rdNote(t.note||'',SP);if(r&&r.t==='sb/1'&&r.audit===tx)return{found:true,payer,agree:r.out===rec.out,explorer:EX+'/transaction/'+t.id}}return{found:false,payer}}
+async function runBuy(sim){
+  const btn=$('go');btn.disabled=true;btn.textContent='Working…';$('result').hidden=true;
+  const t0=Date.now();document.querySelectorAll('#steps li').forEach(l=>l.className='wait');
+  tick=setInterval(()=>{$('elapsed').textContent='StudyBuddy is working… '+((Date.now()-t0)/1000).toFixed(0)+' s (each step lights up live, with its real timing, as StudyBuddy reports it)'},400);
   try{
-    const r=await fetch(SB+'/api/buy',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:$('question').value,answer:$('answer').value,marks:+$('marks').value,mode:$('mode').value})});
-    const j=await r.json();clearInterval(tick);
-    document.querySelectorAll('#steps li').forEach(l=>l.className='');
-    for(const s of (j.steps||[])){let extra=`<b>+${(s.t_ms/1000).toFixed(1)} s</b> · `+esc(s.detail);if(s.explorer)extra+=` <a href="${s.explorer}" target="_blank" rel="noopener">tx ↗</a>`;mark(s.name,(s.ok===false?'fail':'done'),extra)}
+    const r=await fetch(SB+'/api/buy?stream=1',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:$('question').value,answer:$('answer').value,marks:+$('marks').value,mode:$('mode').value,simulate:sim?'reviewer_outage':undefined,seller:location.origin.includes('vercel.app')?location.origin:'https://mainsmarker-algo.sites.tab.bot'})});
+    const showStep=s=>{let extra=`<b>+${(s.t_ms/1000).toFixed(1)} s</b> · `+esc(s.detail);if(s.explorer)extra+=` <a href="${s.explorer}" target="_blank" rel="noopener">tx ↗</a>`;mark(s.name,(s.ok===false?'fail':'done'),extra)};
+    let j=null;const rd=r.body.getReader();const td=new TextDecoder();let buf='';
+    for(;;){const {done,value}=await rd.read();if(done)break;buf+=td.decode(value,{stream:true});let n;while((n=buf.indexOf('\n'))>=0){const line=buf.slice(0,n).trim();buf=buf.slice(n+1);if(!line)continue;const o=JSON.parse(line);if(o.step)showStep(o.step);if(o.done)j=o}}
+    if(!j&&buf.trim())j=JSON.parse(buf);
+    clearInterval(tick);document.querySelectorAll('#steps li.wait').forEach(l=>l.className='');
+    if(!j)throw new Error('StudyBuddy closed the stream without a result');
+    if(j.refunded){$('elapsed').innerHTML=`<span class="okt">Refund path shown.</span> The payment settled, the reviewer failed (simulated), and MainsMarker sent the MMTC back on-chain: <a href="${j.payment.explorer}" target="_blank" rel="noopener">payment tx</a> · <a href="${j.refund.explorer}" target="_blank" rel="noopener">refund tx</a>.`;setTimeout(audit,5000);statsLine();return}
     if(!j.ok){$('elapsed').innerHTML='<span class="badt">Stopped: '+esc((j.steps||[]).slice(-1)[0]?.detail||j.error||'error')+'</span>';return}
     $('elapsed').innerHTML='<span class="okt">Done in '+((Date.now()-t0)/1000).toFixed(1)+' s.</span>';
     show(j.result);pending(j.result.audit);statsLine();
   }catch(e){clearInterval(tick);$('elapsed').innerHTML='<span class="badt">'+esc(e.message)+'</span>'}
   finally{btn.disabled=false;btn.textContent='Let StudyBuddy buy a review · 0.25 MMTC'}
-};
+}
+$('go').onclick=()=>runBuy(false);$('gosim').onclick=()=>{if(confirm('This pays 0.25 MMTC, then makes the reviewer fail on purpose so you can watch MainsMarker refund the payment on-chain. Go?'))runBuy(true)};
+function b64u(s){return btoa(unescape(encodeURIComponent(s))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function unb64u(s){return decodeURIComponent(escape(atob(s.replace(/-/g,'+').replace(/_/g,'/'))))}
+function verifyLink(res,q,an){return location.origin+'/#v='+b64u(JSON.stringify({tx:res.audit.tx,review:res.review,q,a:an}))}
 function show(res){
   last=res;const v=res.review;$('result').hidden=false;
   $('score').innerHTML=`${v.score}<small> / ${v.max}</small>`;$('verdict').textContent=v.verdict;
   const L=(id,a)=>$(id).innerHTML=(a||[]).map(x=>`<li>${esc(x)}</li>`).join('')||'<li>—</li>';
   L('strengths',v.strengths);L('improvements',v.improvements);L('missing',v.missing_points);L('outline',v.model_outline);
-  $('diagram').textContent=v.diagram_tip||'—';
+  $('diagram').textContent=v.diagram_tip||'—';$('subs').textContent=v.subscores?Object.entries(v.subscores).map(([k,x])=>k+' '+x).join(' · '):'—';
   $('proof').innerHTML=`model: ${esc(res.model)}<br>review sha256: ${res.review_sha256}<br>payment: <a href="${res.payment.explorer}" target="_blank" rel="noopener">${short(res.payment.transaction)}</a> (payer ${short(res.payment.payer)}, fees paid by ${short(res.payment.fee_payer)})<br>rubric: ${esc(res.rubric?res.rubric.version:'')} · sha256 ${short(res.rubric?res.rubric.sha256:'')} (<a href="/api/rubric" target="_blank">read it</a>)<br>audit record: ${res.audit.tx?`<a href="${res.audit.explorer}" target="_blank" rel="noopener">${short(res.audit.tx)}</a>`:'not written: '+esc(res.audit.error)}`;
-  $('vres').textContent='';$('result').scrollIntoView({behavior:'smooth'});
+  $('vres').textContent='';if(res.audit.tx){$('vlink').href=verifyLink(res,$('question').value,$('answer').value);$('vlink').hidden=false}$('result').scrollIntoView({behavior:'smooth'});
 }
 $('verify').onclick=async()=>{
   if(!last||!last.audit.tx)return;$('vres').textContent='Checking the chain…';
   const local=await sha(canon(last.review));
-  for(let k=0;k<8;k++){const a=await (await fetch('/api/audit/'+last.audit.tx)).json();
-    if(a.found){const ok=a.record.out===local;$('vres').innerHTML=ok?`<span class="okt">✓ Match.</span> The SHA-256 of this review, computed in your browser (${short(local)}), equals the hash MainsMarker anchored on-chain.`:`<span class="badt">✗ Mismatch.</span> local ${short(local)} vs chain ${short(a.record.out)}`;return}
-    $('vres').textContent='Waiting for the audit transaction to finalise…';await new Promise(r=>setTimeout(r,3000))}
-  $('vres').textContent='The audit transaction is not final yet. Try again in a few seconds.';
+  for(let k=0;k<8;k++){const a=await chainAudit(last.audit.tx);
+    if(a.found){const ok=a.record.out===local;$('vres').innerHTML=ok?`<span class="okt">✓ Match.</span> The SHA-256 of this review, computed in your browser (${short(local)}), equals the hash MainsMarker anchored on-chain (read directly from the indexer).`:`<span class="badt">✗ Mismatch.</span> local ${short(local)} vs chain ${short(a.record.out)}`;return}
+    $('vres').textContent='Waiting for the audit transaction to be indexed…';await new Promise(r=>setTimeout(r,3000))}
+  $('vres').textContent='The audit transaction is not indexed yet. Try again in a few seconds.';
 };
-async function statsLine(){try{const s=await (await fetch('/api/stats')).json();$('stats').textContent=`${s.paid_reviews} paid reviews · ${s.distinct_buyer_accounts} distinct buyer account(s) · ${s.revenue_mmtc.toFixed(2)} MMTC earned`}catch(e){}}
-$('vany').onclick=async()=>{const tx=$('vtx').value.trim();let obj;try{obj=JSON.parse($('vjson').value)}catch(e){$('vanyres').textContent='That is not valid JSON.';return}
-  if(obj.review&&obj.audit)obj=obj.review;const local=await sha(canon(obj));$('vanyres').textContent='Checking…';
-  const a=await (await fetch('/api/audit/'+tx)).json();if(!a.found){$('vanyres').textContent='No MainsMarker audit memo in that transaction ('+esc(a.status||'not found')+').';return}
-  $('vanyres').innerHTML=a.record.out===local?`<span class="okt">✓ Match</span> · anchored ${short(a.record.out)} · model ${esc(a.record.m)} · rubric ${esc(a.record.rb||'v1')} · <a href="${a.explorer}" target="_blank" rel="noopener">tx</a>`:`<span class="badt">✗ No match</span> · yours ${short(local)} vs chain ${short(a.record.out)}`};
+async function statsLine(){try{const s=await (await fetch('/api/stats')).json();$('stats').textContent=`${s.paid_reviews} paid reviews · ${s.refunds||0} refunded · ${s.distinct_buyer_accounts} distinct buyer account(s) · ${s.revenue_mmtc.toFixed(2)} MMTC earned (price ${s.price_mmtc||0.25}; the initial funding is excluded)`}catch(e){}}
+async function verifyAny(){const tx=$('vtx').value.trim();let obj;try{obj=JSON.parse($('vjson').value)}catch(e){$('vanyres').textContent='That is not valid JSON.';return}
+  if(obj.review&&obj.audit)obj=obj.review;const local=await sha(canon(obj));$('vanyres').textContent='Checking the chain…';
+  let a;for(let k=0;k<10;k++){a=await chainAudit(tx);if(a.found)break;await new Promise(r=>setTimeout(r,3000))}
+  if(!a.found){$('vanyres').textContent='No MainsMarker audit note in that transaction ('+esc(a.status||'not found')+').';return}
+  let out=a.record.out===local?`<span class="okt">✓ Review matches</span> the anchored hash ${short(a.record.out)}`:`<span class="badt">✗ Review does not match</span> (yours ${short(local)} vs chain ${short(a.record.out)})`;
+  const q=$('vq').value.trim(),an=$('va').value.trim();
+  if(q&&an){const ih=await sha(canon({question:q,answer:an}));out+=a.record.in===ih?` · <span class="okt">✓ Input matches</span> (this review was produced for this question and answer)`:` · <span class="badt">✗ Input does not match</span>`}
+  out+=` · model ${esc(a.record.m)} · rubric ${esc(a.record.rb||'v1')} · <a href="${a.explorer}" target="_blank" rel="noopener">audit tx</a>`;
+  try{const c=await chainReceipt(tx,a.record);out+=c.found?(c.agree?` · <span class="okt">✓ Buyer receipt</span> from ${short(c.payer)} agrees (<a href="${c.explorer}" target="_blank" rel="noopener">tx</a>)`:` · <span class="badt">✗ Buyer receipt disagrees</span>`):' · no buyer receipt'}catch(e){}
+  out+=' · <span class="note">read from the chain in your browser</span>';
+  $('vanyres').innerHTML=out}
+$('vany').onclick=verifyAny;
+$('vtamper').onclick=async()=>{let o;try{o=JSON.parse($('vjson').value)}catch(e){$('vtamperres').textContent='Buy a review first (or open a verify link), then try this.';return}
+  if(o.review&&o.audit)o=o.review;const before=o.score;o.score=Math.min((+o.max||15),(+o.score||0)+3);if(o.score===before)o.score=before-3;$('vjson').value=JSON.stringify(o,null,1);
+  $('vtamperres').innerHTML=`Changed the score from <b>${esc(before)}</b> to <b>${esc(o.score)}</b>, the way a lying seller (or a buyer forging a better mark) would. The chain should now refuse it:`;await verifyAny()};
+if(location.hash.startsWith('#v=')){try{const v=JSON.parse(unb64u(location.hash.slice(3)));$('vtx').value=v.tx;$('vjson').value=JSON.stringify(v.review,null,1);$('vq').value=v.q||'';$('va').value=v.a||'';setTimeout(()=>{$('vany').scrollIntoView({behavior:'smooth'});verifyAny()},600)}catch(e){}}
 info();audit();statsLine();
 </script>
 </body>

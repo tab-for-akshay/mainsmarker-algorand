@@ -33,7 +33,7 @@ async function requirements(resourceUrl) {
 }
 
 // ---------- LLM review ----------
-const RUBRIC_VERSION = 'mm-rubric-2026-11-01';
+const RUBRIC_VERSION = 'mm-rubric-2026-11-01b'; // b: per-criterion subscores (round-1 feedback)
 const SYS = `You are MainsMarker, a strict but fair UPSC Civil Services / IFoS Mains examiner.
 Evaluate the candidate's answer to the question. Judge: directive word compliance (discuss/explain/critically examine...), introduction, structure, content accuracy and coverage, Indian examples and data, diagram/flowchart use where it earns marks, conclusion, and word limit (about 150 words for 10 marks, 250 for 15).
 Be specific and actionable. Never invent statistics; if you mention a figure, say it must be checked.
@@ -41,7 +41,9 @@ Return ONLY JSON with keys:
 "score" (number, to one decimal), "max" (number), "verdict" (one sentence),
 "strengths" (array of up to 3 short strings), "improvements" (array of up to 4 short strings),
 "missing_points" (array of up to 5 short strings), "model_outline" (array of 4-7 short lines: intro, body points, diagram idea, conclusion),
-"diagram_tip" (string or ""), "word_count_note" (string).`;
+"diagram_tip" (string or ""), "word_count_note" (string),
+"subscores" (object with integer marks out of 10 for each criterion: "directive", "structure", "content", "examples", "diagram", "conclusion").
+Use the whole scale: an answer that misses the directive or has no content scores low; reserve high marks for answers a topper would write. Only cite Indian examples that are relevant to the question's topic.`;
 
 let _rb; const rubricHash = async () => (_rb ||= await sha256hex(RUBRIC_VERSION + '\n' + SYS));
 async function chat(url, key, model, messages, extra = {}, timeoutMs = 45000) {
@@ -64,6 +66,7 @@ function parseReview(text, max) {
     verdict: String(o.verdict || ''), strengths: arr(o.strengths), improvements: arr(o.improvements),
     missing_points: arr(o.missing_points), model_outline: arr(o.model_outline),
     diagram_tip: String(o.diagram_tip || ''), word_count_note: String(o.word_count_note || ''),
+    subscores: Object.fromEntries(['directive', 'structure', 'content', 'examples', 'diagram', 'conclusion'].map(k => [k, Math.max(0, Math.min(10, Math.round(Number(o?.subscores?.[k]) || 0)))])),
   };
 }
 async function review({ question, answer, marks, mode }) {
@@ -93,12 +96,19 @@ async function anchorAudit(rec) {
   const { txid } = await c.sendRawTransaction(t.signTxn(sk)).do();
   return txid;
 }
+async function refundAsa(payer, payTx, why) {
+  const sk = algosdk.mnemonicToSecretKey(SECRETS.MM_MNEMONIC).sk;
+  const c = algod(); const sp = await c.getTransactionParams().do();
+  const t = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({ sender: CFG.accounts.mainsmarker, receiver: payer, amount: Number(PRICE), assetIndex: Number(CFG.asa), note: enc.encode(NOTE_PREFIX + JSON.stringify({ v: 1, t: 'refund', pay: payTx, payer, why: String(why).slice(0, 80) })), suggestedParams: sp });
+  const { txid } = await c.sendRawTransaction(t.signTxn(sk)).do();
+  return txid;
+}
 const b64 = s => btoa(s);
 function readNote(n) { try { const s = atob(n); if (!s.startsWith(NOTE_PREFIX)) return null; return JSON.parse(s.slice(NOTE_PREFIX.length)); } catch { return null; } }
 async function auditLog(limit = 20) {
   const r = await fetch(`${IDX}/v2/accounts/${CFG.accounts.mainsmarker}/transactions?note-prefix=${encodeURIComponent(b64(NOTE_PREFIX))}&limit=${limit}`);
   const j = await r.json();
-  return (j.transactions || []).map(t => ({ ...readNote(t.note), tx: t.id, at: new Date(t['round-time'] * 1000).toISOString(), round: t['confirmed-round'], explorer: txUrl(t.id) })).filter(x => x.out);
+  return (j.transactions || []).map(t => ({ ...readNote(t.note), tx: t.id, at: new Date(t['round-time'] * 1000).toISOString(), round: t['confirmed-round'], explorer: txUrl(t.id) })).filter(x => x.out || x.t === 'refund');
 }
 async function auditByTx(id) {
   const r = await fetch(`${IDX}/v2/transactions/${id}`); if (r.status !== 200) return { found: false, status: 'not indexed yet' };
@@ -107,9 +117,11 @@ async function auditByTx(id) {
 }
 async function stats() {
   const r = await fetch(`${IDX}/v2/accounts/${CFG.accounts.mainsmarker}/transactions?asset-id=${CFG.asa}&tx-type=axfer&limit=1000`);
-  const j = await r.json(); const buyers = new Set(); let paid = 0, amt = 0;
-  for (const t of j.transactions || []) { const x = t['asset-transfer-transaction']; if (x && x.receiver === CFG.accounts.mainsmarker && t.sender !== CFG.accounts.mainsmarker && x.amount > 0) { paid++; buyers.add(t.sender); amt += x.amount / 1e6; } }
-  return { paid_reviews: paid, distinct_buyer_accounts: buyers.size, revenue_mmtc: amt, buyers: [...buyers] };
+  const j = await r.json(); const buyers = new Set(); let paid = 0, refunds = 0;
+  for (const t of j.transactions || []) { const x = t['asset-transfer-transaction']; if (!x) continue;
+    if (x.receiver === CFG.accounts.mainsmarker && t.sender !== CFG.accounts.mainsmarker && String(x.amount) === PRICE) { paid++; buyers.add(t.sender); }
+    if (t.sender === CFG.accounts.mainsmarker && x.receiver !== CFG.accounts.mainsmarker && String(x.amount) === PRICE) refunds++; }
+  return { paid_reviews: paid, refunds, distinct_buyer_accounts: buyers.size, revenue_mmtc: (paid - refunds) * Number(PRICE) / 1e6, price_mmtc: Number(PRICE) / 1e6, note: 'Counts only transfers of exactly the price; the initial 1,000 MMTC funding of StudyBuddy and opt-ins are excluded.', buyers: [...buyers] };
 }
 async function agentId() {
   const [a, cfgTx] = await Promise.all([fetch(`${IDX}/v2/assets/${CFG.agent_asa}`).then(r => r.json()), fetch(`${IDX}/v2/assets/${CFG.agent_asa}/transactions?tx-type=acfg&limit=20`).then(r => r.json())]);
@@ -139,7 +151,11 @@ async function handleX402(request, origin) {
     const s = await facilitator().settle(payload, req);
     if (!s.success) return json({ ...pr, error: 'Settlement failed: ' + (s.errorReason || '') }, 402);
     const tPaid = now();
-    const { review: rv, model, fallbacks } = await review({ question, answer, marks: body.marks, mode: body.mode });
+    let rvOut;
+    try { if (body.simulate === 'reviewer_outage') throw new Error('Simulated reviewer outage (refund-path demo requested by the buyer)'); rvOut = await review({ question, answer, marks: body.marks, mode: body.mode }); }
+    catch (e) { let refundTx = null, rerr = null; try { refundTx = await refundAsa(s.payer, s.transaction, e.message || e); } catch (e2) { rerr = String(e2.message || e2); }
+      return json({ error: 'Review failed after payment; refunded.', reason: String(e.message || e).slice(0, 200), payment: { transaction: s.transaction, explorer: txUrl(s.transaction) }, refund: refundTx ? { tx: refundTx, explorer: txUrl(refundTx) } : { error: rerr } }, 502); }
+    const { review: rv, model, fallbacks } = rvOut;
     const tRev = now();
     const inHash = await sha256hex(canon({ question, answer })), outHash = await sha256hex(canon(rv));
     const rec = { v: 1, in: inHash, out: outHash, rb: (await rubricHash()).slice(0, 12), m: model, pay: s.transaction, payer: s.payer, sc: `${rv.score}/${rv.max}`, agent: CFG.agent_asa };
