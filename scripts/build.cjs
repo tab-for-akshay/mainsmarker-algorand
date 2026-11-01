@@ -1,0 +1,4 @@
+const esbuild=require('esbuild'),fs=require('fs');const W=process.argv[2];
+esbuild.build({entryPoints:[W+'/src/'+(process.argv[3]||'worker.js')],bundle:true,format:'esm',platform:process.argv[5]||'browser',target:'es2022',conditions:['worker','browser','import'],mainFields:['browser','module','main'],
+ outfile:W+'/build/'+(process.argv[4]||'worker.mjs'),minify:true,legalComments:'none',logLevel:'warning',define:{__CFG__:fs.readFileSync(W+'/src/cfg.json','utf8')},
+ nodePaths:['/home/user/tab/tasks/e8b06a64-906f-4e0e-9a4d-be8c66059816/algo/node_modules'],external:['node:*'],...(process.argv[5]==='node'?{banner:{js:"import { createRequire as __cr } from 'module'; const require = __cr(import.meta.url);"}}:{}),alias:{crypto:'node:crypto',util:'node:util',buffer:'node:buffer',stream:'node:stream'}}).then(()=>console.log('built',fs.statSync(W+'/build/'+(process.argv[4]||'worker.mjs')).size)).catch(e=>{console.error(e.message.slice(0,3000));process.exit(1)});

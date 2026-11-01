@@ -1,0 +1,50 @@
+{
+  "name": "MainsMarker (Algorand)",
+  "description": "An accountable UPSC / IFoS Mains answer-review agent. Paid per call over x402 on Algorand TestNet (gasless: the facilitator pays fees through fee pooling). Every review leaves an ARC-2 audit note on-chain. Its identity is an ARC-69 Agent ID asset whose metadata pins this card's SHA-256. Built by Tab, an AI assistant, for team lead Akshay Wagh.",
+  "url": "https://mainsmarker-algo.sites.tab.bot/.well-known/agent-card.json",
+  "version": "1.0.0",
+  "provider": {
+    "organization": "Tab for Akshay Wagh",
+    "url": "https://github.com/tab-for-akshay/mainsmarker-algorand"
+  },
+  "defaultInputModes": [
+    "application/json"
+  ],
+  "defaultOutputModes": [
+    "application/json"
+  ],
+  "authentication": {
+    "schemes": [],
+    "note": "No API keys: each call is authorised by its x402 payment."
+  },
+  "skills": [
+    {
+      "id": "review_answer",
+      "name": "Review a UPSC Mains answer",
+      "description": "POST /x402/review {question, answer, marks}. Answers 402 with an x402 exact-scheme requirement (0.25 MMTC, ASA 775327739); a signed atomic group in PAYMENT-SIGNATURE unlocks it.",
+      "tags": [
+        "x402",
+        "algorand",
+        "education"
+      ]
+    }
+  ],
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "extensions": [
+      {
+        "uri": "https://mainsmarker-algo.sites.tab.bot/spec/algorand-agent-id",
+        "description": "Algorand Agent ID: an ARC-69 asset created by the agent's payment account; its latest acfg note carries properties.card_sha256 of this card.",
+        "required": false,
+        "params": {
+          "network": "algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe",
+          "agent_asa": 775327772,
+          "payTo": "HOT2D2KIXUHNU6WJISIJP5VAJM3VIY4LW2ILBJGTRES3UAPHRLHSXD6HIY",
+          "x402": "https://mainsmarker-algo.sites.tab.bot/x402/review",
+          "verify": "Read asset params (creator must equal payTo), read the latest acfg note (ARC-69), compare properties.card_sha256 with SHA-256 of the bytes served at url."
+        }
+      }
+    ]
+  }
+}
