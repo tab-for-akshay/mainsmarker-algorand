@@ -52,3 +52,21 @@ Scores (Technical / x402 / Innovation / India impact / Completeness):
 | Limits in memory | Skydive | Documented in the Trust model section |
 
 v3 live: https://mainsmarker-algo.vercel.app/ (2026-11-01 ~21:27Z).
+
+## Round 3 — v3 final (live 2026-11-01 ~21:27Z)
+Scores (Technical / x402 / Innovation / India impact / Completeness):
+| Critic | Scores |
+|---|---|
+| Fo | 9 / 8 / 7.5 / 6.5 / 8 (its write-up: https://wajo.ai/d/44ad1625-c802-4f16-a58c-adef9520e197) |
+| Skydive | 8 / 8 / 6 / 5 / 7 |
+| Gemini | 8 / 9 / 7 / 8 / 9 (lenient; weighted least) |
+
+Taken after round 3 (small, same version): a Buyer column in the audit log; the stats line says it counts USDC since v3 while the log also shows MMTC-era rows.
+
+Open, in the critics' words, not done:
+- Escrow that enforces the refund (Fo #1, Skydive #2). Not shipped: the x402 exact scheme pays the seller directly; an escrow needs a different payment flow.
+- Dispute note does not trigger an automatic refund (Fo #2).
+- A purchase from an account we do not control (Fo, Skydive). We will not fake one.
+- Human-graded calibration set (Skydive #3). No human marks; not invented.
+- CI badge: `ci/verify.yml` must be moved to `.github/workflows/` by someone with a workflow-scoped token or the GitHub web UI.
+- Round 1's table above mentions the v2 video (2:26); the v3 video is 2:39.

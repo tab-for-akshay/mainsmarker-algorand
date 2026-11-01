@@ -122,7 +122,7 @@ Conclusion: mycorrhizae are an invisible partner of forests, and their wider use
   <section class="card">
     <h2>On-chain audit log</h2>
     <p class="note">Read live from MainsMarker's testnet account. The chain is the database, so there is no server-side storage to trust. <b id="stats"></b></p>
-    <div style="overflow:auto"><table><thead><tr><th>When (UTC)</th><th>Score</th><th>Model</th><th>Review hash</th><th>Record</th></tr></thead><tbody id="audit"><tr><td colspan="5">Loading…</td></tr></tbody></table></div>
+    <div style="overflow:auto"><table><thead><tr><th>When (UTC)</th><th>Score</th><th>Model</th><th>Buyer</th><th>Review hash</th><th>Record</th></tr></thead><tbody id="audit"><tr><td colspan="6">Loading…</td></tr></tbody></table></div>
   </section>
 
   <section class="card">
@@ -179,8 +179,8 @@ async function info(){
 }
 async function audit(){
   try{const a=await (await fetch('/api/audit?limit=15')).json();
-    $('audit').innerHTML=a.length?a.map(r=>r.t==='refund'?`<tr><td>${r.at.replace('T',' ').slice(0,16)}</td><td><b>refund</b></td><td>${esc(r.why||'')}</td><td class="mono">pay ${short(r.pay||'')}</td><td><a href="${r.explorer}" target="_blank" rel="noopener">view tx</a></td></tr>`:`<tr><td>${r.at.replace('T',' ').slice(0,16)}</td><td>${esc(r.sc)}</td><td>${esc(r.m)}</td><td class="mono">${short(r.out)}</td><td><a href="${r.explorer}" target="_blank" rel="noopener">view tx</a></td></tr>`).join(''):'<tr><td colspan="5">No reviews yet. Run one above.</td></tr>';
-  }catch(e){$('audit').innerHTML='<tr><td colspan="5">Could not read the chain right now.</td></tr>'}
+    $('audit').innerHTML=a.length?a.map(r=>r.t==='refund'?`<tr><td>${r.at.replace('T',' ').slice(0,16)}</td><td><b>refund</b></td><td>${esc(r.why||'')}</td><td class="mono">${short(r.payer||'')}</td><td class="mono">pay ${short(r.pay||'')}</td><td><a href="${r.explorer}" target="_blank" rel="noopener">view tx</a></td></tr>`:`<tr><td>${r.at.replace('T',' ').slice(0,16)}</td><td>${esc(r.sc)}</td><td>${esc(r.m)}</td><td class="mono">${short(r.payer||'')}</td><td class="mono">${short(r.out)}</td><td><a href="${r.explorer}" target="_blank" rel="noopener">view tx</a></td></tr>`).join(''):'<tr><td colspan="6">No reviews yet. Run one above.</td></tr>';
+  }catch(e){$('audit').innerHTML='<tr><td colspan="6">Could not read the chain right now.</td></tr>'}
 }
 async function pending(a){
   if(!a||!a.tx)return;const tb=$('audit');const row=document.createElement('tr');row.id='pend';
@@ -237,7 +237,7 @@ $('verify').onclick=async()=>{
     $('vres').textContent='Waiting for the audit transaction to be indexed…';await new Promise(r=>setTimeout(r,3000))}
   $('vres').textContent='The audit transaction is not indexed yet. Try again in a few seconds.';
 };
-async function statsLine(){try{const s=await (await fetch('/api/stats')).json();$('stats').textContent=`${s.paid_reviews} paid reviews · ${s.refunds||0} refunded · ${s.distinct_buyer_accounts} distinct buyer account(s) · ${(+s.revenue).toFixed(2)} ${s.unit} earned (price ${s.price} ${s.unit}; funding transfers excluded)`}catch(e){}}
+async function statsLine(){try{const s=await (await fetch('/api/stats')).json();$('stats').textContent=`${s.paid_reviews} paid reviews · ${s.refunds||0} refunded · ${s.distinct_buyer_accounts} distinct buyer account(s) · ${(+s.revenue).toFixed(2)} ${s.unit} earned — counted in ${s.unit} since v3 pricing (price ${s.price} ${s.unit}); the log below also shows earlier MMTC-era reviews`}catch(e){}}
 async function verifyAny(){const tx=$('vtx').value.trim();let obj;try{obj=JSON.parse($('vjson').value)}catch(e){$('vanyres').textContent='That is not valid JSON.';return}
   if(obj.review&&obj.audit)obj=obj.review;const local=await sha(canon(obj));$('vanyres').textContent='Checking the chain…';
   let a;for(let k=0;k<10;k++){a=await chainAudit(tx);if(a.found)break;await new Promise(r=>setTimeout(r,3000))}
