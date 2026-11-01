@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// Standalone x402 buyer for MainsMarker on Algorand TestNet — any account opted in to the MMTC test ASA can buy.
+// Standalone x402 buyer for MainsMarker on Algorand TestNet — any account opted in to TestNet USDC (ASA 10458941) can buy.
 // Built by Tab, an AI assistant, for team lead Akshay Wagh.
 //   npm i algosdk @x402/avm @x402/core
 //   BUYER_MNEMONIC="25 words" node scripts/buy.mjs [seller-url]
 import algosdk from 'algosdk'; import { createHash } from 'node:crypto';
 import { ExactAvmScheme } from '@x402/avm/exact/client'; import { toClientAvmSigner } from '@x402/avm';
 import { decodePaymentRequiredHeader, encodePaymentSignatureHeader, decodePaymentResponseHeader } from '@x402/core/http';
-const SELLER = (process.argv[2] || 'https://mainsmarker-algo.sites.tab.bot').replace(/\/$/, ''); const IDX = 'https://testnet-idx.algonode.cloud';
+const SELLER = (process.argv[2] || 'https://mainsmarker-algo.vercel.app').replace(/\/$/, ''); const IDX = 'https://testnet-idx.algonode.cloud';
 const canon = v => Array.isArray(v) ? '[' + v.map(canon).join(',') + ']' : (v && typeof v === 'object') ? '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}' : JSON.stringify(v);
 const sha = b => createHash('sha256').update(b).digest('hex'); const log = (k, v) => console.log(k.padEnd(10), v);
 const bytes = Buffer.from(await (await fetch(SELLER + '/.well-known/agent-card.json')).arrayBuffer()); const card = JSON.parse(bytes);

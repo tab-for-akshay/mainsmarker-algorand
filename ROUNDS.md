@@ -29,3 +29,26 @@ What they found, and what v2 did:
 | Private mode | Skydive | The self-hosted model sleeps; the reviewer falls back to cloud models and the response says so (`fallbacks`) |
 
 v2 live: https://mainsmarker-algo.vercel.app/ (2026-11-01 ~21:00Z).
+
+## Round 2 — v2 (live 2026-11-01 ~21:00Z)
+Scores (Technical / x402 / Innovation / India impact / Completeness):
+| Critic | Scores |
+|---|---|
+| Fo | 9 / 7 / 7 / 6 / 7 |
+| Skydive | 9 / 7 / 7 / 7 / 6 |
+| Gemini | 9 / 9 / 8 / 8 / 9 (lenient; weighted least) |
+
+| Finding | Who | v3 |
+|---|---|---|
+| Price in TestNet USDC, not self-minted MMTC (all three critics, both rounds) | Fo, Skydive, Gemini | Done: 0.05 USDC (ASA 10458941), funded from Circle's faucet |
+| Tamper button dead-ends without a purchase | Fo, Skydive | Fixed: real on-chain sample; form pre-filled after a purchase |
+| StudyBuddy page meta still says Concordium | Fo | Fixed |
+| Refund is voluntary, not enforced | Fo, Skydive | Stated plainly in a Trust model section and in the card; buyer now files an on-chain dispute note when the audit is missing or wrong. Escrow not shipped: the x402 exact scheme pays the seller directly |
+| Tests and CI | Skydive | Added: on-chain verification test + GitHub Actions |
+| "~3 s" settle claim vs 4.5 s measured | Fo | Wording now "a few seconds" |
+| Score drift between runs | Fo | temperature 0 on all model calls |
+| One buyer only | Fo, Skydive | Not taken: we will not fake a third party; `scripts/buy.mjs` is open for anyone |
+| Agent-vs-human table | Fo | Not taken: no human marks; not invented |
+| Limits in memory | Skydive | Documented in the Trust model section |
+
+v3 live: https://mainsmarker-algo.vercel.app/ (2026-11-01 ~21:27Z).

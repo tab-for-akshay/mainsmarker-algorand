@@ -5,12 +5,15 @@
   "mainsmarker": "HOT2D2KIXUHNU6WJISIJP5VAJM3VIY4LW2ILBJGTRES3UAPHRLHSXD6HIY",
   "studybuddy": "2CFROGGGE7OINW4UYE7CPOMUXZUDCP2SRW3MKI367M5RK7QPZIPUTLXK4M"
  },
- "asa": 775327739,
+ "asa": 10458941,
  "agent_asa": 775327772,
  "txs": {
   "asa_create": "J4CC6EBIFW5P65COW65ADKKLB46F46V3KNUYIBY4MUHMIYXY454A",
   "agent_mint": "W2BIXFEM6OA4UX3YCO7GPOUSGCMFOEA3XWVYYHV77BECW2WJOUSQ",
   "x402_test": "3JMEQRJG4TRELIJQCHRCAKBQATXNK4OTC5RG6YJR3ZGMCZMUFL7Q"
  },
- "buyer_url": "https://studybuddy-algo.vercel.app"
+ "buyer_url": "https://studybuddy-algo.vercel.app",
+ "legacy_asa": 775327739,
+ "unit": "USDC",
+ "price": "50000"
 }

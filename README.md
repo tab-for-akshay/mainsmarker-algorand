@@ -16,7 +16,18 @@ Built by Tab, an AI assistant, for team lead Akshay Wagh.
 | Agent Card | https://mainsmarker-algo.vercel.app/.well-known/agent-card.json |
 | Agent ID asset | https://lora.algokit.io/testnet/asset/775327772 |
 | Shareable verify link (opens the verifier pre-filled and checks the chain) | see `VERIFY_LINK.txt` |
-| Demo video (2:26) | https://mainsmarker-algo.vercel.app/demo.mp4 |
+| Demo video (2:39) | https://mainsmarker-algo.vercel.app/demo.mp4 |
+
+## New in v3 (after round-2 critics)
+- **Priced in real TestNet USDC** (Circle's ASA 10458941), 0.05 USDC per review (about ₹4). StudyBuddy was funded from Circle's public faucet; both agents opted in on-chain. MMTC (ASA 775327739) is retired; its history stays on-chain.
+- **Agent card v3** carries the USDC `accepts` block and a `trust` block (who runs the facilitator, what the refund is and is not); its hash is re-pinned on the Agent ID.
+- **Trust model section** on the page says plainly what you must trust (the seller to refund; our facilitator) and what you need not (what the seller said: the chain checks it).
+- **Buyer disputes on-chain:** if the audit note is missing or its hash differs, StudyBuddy writes a `dispute` note naming the payment.
+- **StudyBuddy's daily budget nets out refunds** read from the chain.
+- **Verifier works with no purchase:** "Load a real sample" and "Try a tampered review" use a real on-chain review; after a purchase the form is pre-filled with it.
+- **Tests + CI:** `node --test tests/verify.test.mjs` checks a real review against TestNet with only the public indexer (review hash, input hash, payment amount, buyer receipt, tamper fails); GitHub Actions runs it on every push.
+- **Less drift:** temperature 0 on every model call.
+- StudyBuddy's page no longer carries Concordium leftovers.
 
 ## New in v2 (after round-1 critics)
 - **Demo video** is live (https://mainsmarker-algo.vercel.app/demo.mp4, 2:26): buy, explorer, verify, tamper, refund.
@@ -41,7 +52,7 @@ Built by Tab, an AI assistant, for team lead Akshay Wagh.
 Browser ─POST /api/buy─▶ StudyBuddy (Vercel, Node)                MainsMarker (Vercel, Node)    
                          1 GET agent-card.json ─────────────────▶ card
                          2 indexer: Agent ID asset #775327772 (creator = payTo, ARC-69 card_sha256 = card)
-                         3 POST /x402/review ───────────────────▶ 402 + PAYMENT-REQUIRED (exact, ASA 775327739, feePayer)
+                         3 POST /x402/review ───────────────────▶ 402 + PAYMENT-REQUIRED (exact, USDC ASA 10458941, feePayer)
                          4 policy: payTo, asset, price cap, daily budget from the indexer
                          5 sign its axfer in an atomic group (0 fee)
                          6 POST + PAYMENT-SIGNATURE ────────────▶ facilitator: verify, simulate, add fee-payer txn, submit
@@ -75,16 +86,25 @@ Abuse limits on the gasless path: 6 paid reviews per payer per 10 minutes, at mo
 | v2: …StudyBuddy's own receipt note | https://lora.algokit.io/testnet/transaction/4QYZBEN34AMLLVRMEPIVWT3FIRCDTEXKAD3S63UIMYEBBTUOZ7IQ |
 | v2 refund demo: payment | https://lora.algokit.io/testnet/transaction/ZR2Z6Y4DWDX6DA7SHYGMPE5WOUNEIXNJHWSXVCMBRCZVKA54RKEA |
 | v2 refund demo: refund (0.25 MMTC back, note names the payment) | https://lora.algokit.io/testnet/transaction/EHXUM5TGDJ36DL7N5NZIHOQHHU6EVM3VT76MZXBUPYDU47VFI23A |
+| v3: USDC from Circle's faucet to StudyBuddy | https://lora.algokit.io/testnet/transaction/J7V7PWPATER3HIEQ4K3SGEPIUJUW6OQNFVKM7HEBP5HE6G5BNOGQ |
+| v3: USDC opt-ins (MainsMarker, StudyBuddy) | https://lora.algokit.io/testnet/transaction/EVTCBLTAEGH5CY57MU2FF6JWYZUX557RDLIUJPBAYTWJEVLNY2JQ · https://lora.algokit.io/testnet/transaction/UHVCLHL77LWKZLL6G3WLXLBO3AO3ZIVL2XP3PROECMIYEM5BFOUA |
+| v3: Agent Card v3 hash re-pinned | https://lora.algokit.io/testnet/transaction/QLP3GPIGRAZOIQBQBCLXGV4DEVVGHK4YHPJONCLIB325LLACG3UA |
+| v3: x402 payment, 0.05 USDC (gasless) | https://lora.algokit.io/testnet/transaction/WPLSTXSVTGCMGYP72JMRF2QLILBK5MDHSKPB5D4J2UKAAPVIFDCQ |
+| v3: …its ARC-2 audit note | https://lora.algokit.io/testnet/transaction/4QIWXVKYKOKQECIAEJADI36GXLBQSMMF4TD2XIMESEFIRKUKN3YA |
+| v3: …StudyBuddy's receipt note | https://lora.algokit.io/testnet/transaction/4KDK6KD2VPOFURHW6I3JCFMHQ4DMNOPNVYL7TZO3DFGN32FCY3VA |
+| v3 refund demo: payment | https://lora.algokit.io/testnet/transaction/BYABTVK3HOD4TPZXA4L6B6LRF3PATD6ZJG6UXXQHZOB2K4QWSQPA |
+| v3 refund demo: refund (0.05 USDC back) | https://lora.algokit.io/testnet/transaction/XR2VPQUN3ZOLJRFOXUCGUII4PZPOGL3MQGDPNU6ZO77E7X6WEN7A |
 
 Accounts: MainsMarker `HOT2D2KIXUHNU6WJISIJP5VAJM3VIY4LW2ILBJGTRES3UAPHRLHSXD6HIY`, StudyBuddy `2CFROGGGE7OINW4UYE7CPOMUXZUDCP2SRW3MKI367M5RK7QPZIPUTLXK4M`, facilitator / fee payer `LYWBPK4OVJABP7CJGGURIYCVJULVGSQF4X4PMWWI5Q2TSSJETFGHDUPXIQ`.
 
 ## Run it
-Buy with any TestNet account that has opted in to ASA 775327739 (ask us for test credits, or change the asset):
+Buy with any TestNet account that has opted in to USDC (ASA 10458941) and holds 0.05 USDC (Circle's public faucet at faucet.circle.com sends 20 TestNet USDC on Algorand; no ALGO needed for fees):
 ```
 npm i algosdk @x402/avm @x402/core
 BUYER_MNEMONIC="your 25 words" node scripts/buy.mjs
 ```
-Deploy your own: `worker/` (Cloudflare Worker, `scripts/build.cjs`), `studybuddy/` (Vercel Node function), `scripts/setup.mjs` (ASA, opt-ins, local x402 round trip), `scripts/mint.mjs` (Agent ID mint and card pin). Keys are injected at deploy time and never committed.
+Test: `node --test tests/verify.test.mjs` (checks a real review on TestNet).
+Deploy your own: `worker/` (Vercel Node function or Cloudflare Worker, `scripts/build.cjs`), `studybuddy/` (Vercel Node function), `scripts/setup.mjs` (ASA, opt-ins, local x402 round trip), `scripts/mint.mjs` (Agent ID mint and card pin). Keys are injected at deploy time and never committed.
 
 ## Impact
 UPSC Mains is written, and feedback on answers is slow and costly; many aspirants in India practise with none. An answer-review agent that study apps and tutor bots can pay per call (no accounts, no API keys, no subscriptions), and that leaves a public record of each review, makes feedback cheap and checkable. The same pattern (on-chain Agent ID + gasless x402 + audit notes) fits any paid AI service in India's agentic-commerce stack.

@@ -2,7 +2,7 @@
   "name": "MainsMarker (Algorand)",
   "description": "An accountable UPSC / IFoS Mains answer-review agent. Paid per call over x402 on Algorand TestNet (gasless: the facilitator pays fees through fee pooling). Every review leaves an ARC-2 audit note on-chain. Its identity is an ARC-69 Agent ID asset whose metadata pins this card's SHA-256. Built by Tab, an AI assistant, for team lead Akshay Wagh.",
   "url": "https://mainsmarker-algo.vercel.app/.well-known/agent-card.json",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "provider": {
     "organization": "Tab for Akshay Wagh",
     "url": "https://github.com/tab-for-akshay/mainsmarker-algorand"
@@ -23,7 +23,7 @@
     {
       "id": "review_answer",
       "name": "Review a UPSC Mains answer",
-      "description": "POST /x402/review {question, answer, marks}. Answers 402 with an x402 exact-scheme requirement (0.25 MMTC, ASA 775327739); a signed atomic group in PAYMENT-SIGNATURE unlocks it.",
+      "description": "POST /x402/review {question, answer, marks}. Answers 402 with an x402 exact-scheme requirement (0.05 USDC, ASA 10458941); a signed atomic group in PAYMENT-SIGNATURE unlocks it.",
       "tags": [
         "x402",
         "algorand",
@@ -55,17 +55,26 @@
       {
         "scheme": "exact",
         "network": "algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe",
-        "asset": "775327739",
-        "amount": "250000",
+        "asset": "10458941",
+        "amount": "50000",
         "payTo": "HOT2D2KIXUHNU6WJISIJP5VAJM3VIY4LW2ILBJGTRES3UAPHRLHSXD6HIY",
         "maxTimeoutSeconds": 300,
         "extra": {
           "feePayer": "LYWBPK4OVJABP7CJGGURIYCVJULVGSQF4X4PMWWI5Q2TSSJETFGHDUPXIQ",
           "decimals": 6,
-          "name": "MMTC (TestNet test credit ASA)"
+          "name": "USDC (Circle TestNet USDC, ASA 10458941)"
         }
       }
     ],
-    "mirror": "https://mainsmarker-algo.sites.tab.bot"
+    "mirror": "https://mainsmarker-algo.sites.tab.bot",
+    "trust": {
+      "facilitator": {
+        "operator": "same team as the seller (Tab for Akshay Wagh)",
+        "fee_payer": "LYWBPK4OVJABP7CJGGURIYCVJULVGSQF4X4PMWWI5Q2TSSJETFGHDUPXIQ",
+        "role": "verifies + simulates the buyer-signed group, adds the fee payment, submits; cannot change amount or payee"
+      },
+      "refund": "seller-initiated ASA transfer back to the payer with an ARC-2 note naming the payment, when a paid review fails; visible on-chain, not enforced by a contract",
+      "audit": "every review: ARC-2 note from payTo with input/review/rubric hashes; buyer receipt from the buyer's own account"
+    }
   }
 }

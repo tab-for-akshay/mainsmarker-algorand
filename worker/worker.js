@@ -11,7 +11,7 @@ const CFG = __CFG__;
 const NET = CFG.network;
 const ALGOD = 'https://testnet-api.algonode.cloud', IDX = 'https://testnet-idx.algonode.cloud';
 const EXPLORER = 'https://lora.algokit.io/testnet';
-const PRICE = '250000'; // 0.25 MMTC (test credit ASA, 6 decimals)
+const PRICE = String(CFG.price || '250000'); const UNIT = CFG.unit || 'MMTC'; // price in base units of the ASA (6 decimals)
 const NOTE_PREFIX = 'mainsmarker:j';
 const DISCLOSURE = 'Built by Tab, an AI assistant, for team lead Akshay Wagh.';
 const enc = new TextEncoder();
@@ -29,7 +29,7 @@ async function requirements(resourceUrl) {
   const p = await server.parsePrice({ amount: PRICE, asset: String(CFG.asa) }, NET);
   let req = { scheme: 'exact', network: NET, payTo: CFG.accounts.mainsmarker, amount: p.amount, asset: p.asset, maxTimeoutSeconds: 300, extra: p.extra || {} };
   req = await server.enhancePaymentRequirements(req, { x402Version: 2, scheme: 'exact', network: NET, extra: facilitator().getExtra(NET) }, []);
-  return { x402Version: 2, error: 'Payment required: 0.25 MMTC (test credit ASA ' + CFG.asa + ') per review. Fees are paid by the facilitator (fee pooling), so the buyer needs no ALGO.', resource: { url: resourceUrl, description: 'MainsMarker: review of one UPSC Mains answer with an on-chain audit note.', mimeType: 'application/json' }, accepts: [req] };
+  return { x402Version: 2, error: 'Payment required: ' + Number(PRICE) / 1e6 + ' ' + UNIT + ' (ASA ' + CFG.asa + ') per review. Fees are paid by the facilitator (fee pooling), so the buyer needs no ALGO.', resource: { url: resourceUrl, description: 'MainsMarker: review of one UPSC Mains answer with an on-chain audit note.', mimeType: 'application/json' }, accepts: [req] };
 }
 
 // ---------- LLM review ----------
@@ -75,9 +75,9 @@ async function review({ question, answer, marks, mode }) {
   const messages = [{ role: 'system', content: SYS }, { role: 'user', content: `Question (${max} marks): ${question}\n\nCandidate answer (${words} words):\n${answer}` }];
   const tries = [];
   if (mode === 'private') tries.push(['self-hosted/huihui-qwythos-9b-abliterated', () => chat(SECRETS.PRIV_URL + '/chat/completions', SECRETS.PRIV_KEY, 'any', messages, { max_tokens: 900, chat_template_kwargs: { enable_thinking: false } }, 60000)]);
-  tries.push(['groq/openai/gpt-oss-120b', () => chat('https://api.groq.com/openai/v1/chat/completions', SECRETS.GROQ, 'openai/gpt-oss-120b', messages, { max_tokens: 1800, reasoning_effort: 'low', response_format: { type: 'json_object' } })]);
-  tries.push(['groq/openai/gpt-oss-20b', () => chat('https://api.groq.com/openai/v1/chat/completions', SECRETS.GROQ, 'openai/gpt-oss-20b', messages, { max_tokens: 1800, reasoning_effort: 'low', response_format: { type: 'json_object' } })]);
-  tries.push(['google/gemini-3.5-flash-lite', () => chat('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', SECRETS.GEMINI, 'gemini-3.5-flash-lite', messages, { max_tokens: 1800 })]);
+  tries.push(['groq/openai/gpt-oss-120b', () => chat('https://api.groq.com/openai/v1/chat/completions', SECRETS.GROQ, 'openai/gpt-oss-120b', messages, { max_tokens: 1800, temperature: 0, seed: 7, reasoning_effort: 'low', response_format: { type: 'json_object' } })]);
+  tries.push(['groq/openai/gpt-oss-20b', () => chat('https://api.groq.com/openai/v1/chat/completions', SECRETS.GROQ, 'openai/gpt-oss-20b', messages, { max_tokens: 1800, temperature: 0, seed: 7, reasoning_effort: 'low', response_format: { type: 'json_object' } })]);
+  tries.push(['google/gemini-3.5-flash-lite', () => chat('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', SECRETS.GEMINI, 'gemini-3.5-flash-lite', messages, { max_tokens: 1800, temperature: 0 })]);
   const errors = [];
   for (const [model, fn] of tries) {
     try { const out = parseReview(await fn(), max); return { review: { ...out, words, model }, model, fallbacks: errors }; }
@@ -121,7 +121,7 @@ async function stats() {
   for (const t of j.transactions || []) { const x = t['asset-transfer-transaction']; if (!x) continue;
     if (x.receiver === CFG.accounts.mainsmarker && t.sender !== CFG.accounts.mainsmarker && String(x.amount) === PRICE) { paid++; buyers.add(t.sender); }
     if (t.sender === CFG.accounts.mainsmarker && x.receiver !== CFG.accounts.mainsmarker && String(x.amount) === PRICE) refunds++; }
-  return { paid_reviews: paid, refunds, distinct_buyer_accounts: buyers.size, revenue_mmtc: (paid - refunds) * Number(PRICE) / 1e6, price_mmtc: Number(PRICE) / 1e6, note: 'Counts only transfers of exactly the price; the initial 1,000 MMTC funding of StudyBuddy and opt-ins are excluded.', buyers: [...buyers] };
+  return { paid_reviews: paid, refunds, distinct_buyer_accounts: buyers.size, revenue: (paid - refunds) * Number(PRICE) / 1e6, price: Number(PRICE) / 1e6, unit: UNIT, asset: CFG.asa, note: 'Counts only transfers of exactly the price in this asset; funding transfers and opt-ins are excluded.', buyers: [...buyers] };
 }
 async function agentId() {
   const [a, cfgTx] = await Promise.all([fetch(`${IDX}/v2/assets/${CFG.agent_asa}`).then(r => r.json()), fetch(`${IDX}/v2/assets/${CFG.agent_asa}/transactions?tx-type=acfg&limit=20`).then(r => r.json())]);
@@ -163,7 +163,7 @@ async function handleX402(request, origin) {
     const settle = { success: true, transaction: s.transaction, network: s.network, payer: s.payer };
     return json({ review_id: s.transaction.slice(0, 10), review: rv, review_sha256: outHash, input_sha256: inHash, hashing: 'SHA-256 over canonical JSON (keys sorted recursively, no whitespace)',
       payment: { ...settle, amount: Number(PRICE) / 1e6, asset: CFG.asa, fee_payer: CFG.accounts.facilitator, explorer: txUrl(s.transaction) },
-      audit: auditTx ? { tx: auditTx, memo: rec, note: NOTE_PREFIX + JSON.stringify(rec), explorer: txUrl(auditTx), status: 'submitted; confirmed in ~3 s' } : { error: auditErr },
+      audit: auditTx ? { tx: auditTx, memo: rec, note: NOTE_PREFIX + JSON.stringify(rec), explorer: txUrl(auditTx), status: 'submitted; confirms in a few seconds' } : { error: auditErr },
       rubric: { version: RUBRIC_VERSION, sha256: await rubricHash() }, model, fallbacks, timings_ms: { settle: tPaid - t0, review: tRev - tPaid, total: now() - t0 }, disclosure: DISCLOSURE,
     }, 200, { 'PAYMENT-RESPONSE': encodePaymentResponseHeader(settle), 'X-Audit-Tx': auditTx || '' });
   } finally { inFlight--; }
@@ -181,7 +181,7 @@ export default {
       if (url.pathname === '/api/stats') return json(await stats());
       if (url.pathname === '/api/agent-id') return json(await agentId());
       if (url.pathname === '/api/rubric') return json({ version: RUBRIC_VERSION, sha256: await rubricHash(), system_prompt: SYS });
-      if (url.pathname === '/api/info') return json({ network: NET, price: Number(PRICE) / 1e6, asset: CFG.asa, agent_asa: CFG.agent_asa, accounts: CFG.accounts, explorer: Object.fromEntries(Object.entries(CFG.accounts).map(([k, v]) => [k, accUrl(v)])), buyer_url: CFG.buyer_url, setup_txs: CFG.txs, limits: LIMITS, disclosure: DISCLOSURE });
+      if (url.pathname === '/api/info') return json({ network: NET, price: Number(PRICE) / 1e6, unit: UNIT, asset: CFG.asa, agent_asa: CFG.agent_asa, accounts: CFG.accounts, explorer: Object.fromEntries(Object.entries(CFG.accounts).map(([k, v]) => [k, accUrl(v)])), buyer_url: CFG.buyer_url, setup_txs: CFG.txs, limits: LIMITS, disclosure: DISCLOSURE });
       if (url.pathname === '/health') return json({ ok: true });
     } catch (e) { return json({ error: String(e?.message || e).slice(0, 500) }, 500); }
     return env.ASSETS.fetch(request);
